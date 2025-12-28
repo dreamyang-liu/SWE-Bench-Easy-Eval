@@ -28,6 +28,38 @@ conda activate swe_easy_eval
 python start.py --model Qwen/Qwen3-8B --tensor-parallel-size 4 --output-dir ./results/qwen3-8b
 ```
 
+If need to change the dataset, change the following section in `start.py`
+
+```python
+def generate_predictions(model_name, config_path, output_dir, workers=32):
+    """Generate model predictions on SWE-bench."""
+    cmd = f"""mini-extra swebench \
+        --model hosted_vllm/{model_name} \
+        --config {config_path} \
+        --subset verified \ # Change to different subset
+        --output {output_dir} \
+        --split test \
+        --workers {workers}"""
+
+    run_cmd(cmd)
+    print(f"✓ Predictions saved to {output_dir}/preds.json")
+def setup_swebench():
+    """Clone and install SWE-bench evaluation tools."""
+    if not Path("SWE-bench").exists():
+        run_cmd("git clone https://github.com/SWE-bench/SWE-bench.git")
+
+    run_cmd("cd SWE-bench && pip install -e .")
+    print("✓ SWE-bench installed")
+
+def run_evaluation(predictions_path, run_id, max_workers=32):
+    """Run the final evaluation."""
+    cmd = f"""python -m swebench.harness.run_evaluation \
+        --dataset_name SumanthRH/SWE-bench_Verified \ # Change to different dataset
+        --predictions_path {predictions_path} \
+        --max_workers {max_workers} \
+        --run_id {run_id}"""
+```
+
 # Step by step eval
 
 ## Step 1: Configure Your Model
